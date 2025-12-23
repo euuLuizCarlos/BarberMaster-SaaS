@@ -19,6 +19,8 @@ const upload = multer({ storage });
 router.post('/login', barberController.login);
 router.post('/register', upload.single('foto_perfil'), barberController.registerBarber);
 router.post('/send-code', barberController.sendVerificationCode);
+router.post('/forgot-password', barberController.forgotPassword);
+router.post('/reset-password', barberController.resetPassword);
 router.get('/logs', auth, barberController.getLogs);
 
 module.exports = router;

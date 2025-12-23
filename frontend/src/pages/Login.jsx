@@ -10,41 +10,43 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        const toastId = toast.loading('Verificando credenciais...');
-        
-        try {
-            const response = await api.post('/barber/login', { 
-                email: formData.email,
-                senha: formData.password // Ajustado para 'senha' conforme seu backend atual
-            });
+    e.preventDefault();
+    setLoading(true);
+    const toastId = toast.loading('Verificando credenciais...');
+    
+    try {
+        const response = await api.post('/barber/login', { 
+            email: formData.email,
+            senha: formData.password
+        });
 
-            localStorage.setItem('token', response.data.token);
-            
-            toast.success(`Bem-vindo, ${response.data.userName || 'Barbeiro'}!`, { id: toastId });
-            
-            setTimeout(() => navigate('/dashboard'), 1000);
+        localStorage.setItem('token', response.data.token);
+        toast.success(`Bem-vindo!`, { id: toastId });
+        setTimeout(() => navigate('/dashboard'), 1000);
 
-        } catch (error) {
-            const errorMessage = error.response?.data?.error || 'Erro ao conectar ao servidor';
-            toast.error(errorMessage, { id: toastId });
+    } catch (error) {
+        const errorMessage = error.response?.data?.error || 'Erro ao conectar';
+        toast.error(errorMessage, { id: toastId });
 
-            // Lógica de Ativação Pendente que você tinha no TCC
-            if (error.response?.status === 403 && errorMessage.includes('Ativação pendente')) {
-                const pendingUserId = error.response.data?.userId;
-                setTimeout(() => navigate(`/ativacao?userId=${pendingUserId}`), 2000);
-            }
-        } finally {
-            setLoading(false);
+        if (error.response?.status === 401) {
+            setShowForgotPassword(true);
         }
-    };
+
+        if (error.response?.status === 403 && errorMessage.includes('Ativação pendente')) {
+            const pendingUserId = error.response.data?.userId;
+            setTimeout(() => navigate(`/ativacao?userId=${pendingUserId}`), 2000);
+        }
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
@@ -117,10 +119,16 @@ const Login = () => {
                             Cadastre-se aqui
                         </Link>
                     </p>
-                    <Link to="/forgot-password" size="sm" className="block text-slate-400 text-xs hover:text-white transition">
-                        Esqueceu sua senha?
-                    </Link>
-                </div>
+                    {/* SÓ APARECE SE O USUÁRIO ERRAR A SENHA */}
+    {showForgotPassword && (
+        <Link 
+            to="/forgot-password" 
+            className="block text-[#FFB703] text-xs font-bold hover:text-white transition-all animate-in fade-in slide-in-from-top-1 duration-300"
+        >
+            Esqueceu sua senha? Clique aqui para recuperar
+        </Link>
+    )}
+</div>
             </div>
         </div>
     );

@@ -228,3 +228,64 @@ exports.sendVerificationCode = async (req, res) => {
         });
     }
 };
+
+// 1. Solicitar recuperação (Gera token e envia e-mail)
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        // Verifica se o barbeiro existe
+        const [user] = await db.execute('SELECT id FROM barbeiros WHERE email = ?', [email]);
+        if (user.length === 0) return res.status(404).json({ error: "E-mail não encontrado." });
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiraEm = new Date(Date.now() + 3600000); // 1 hora de validade
+
+        await db.execute(
+            'INSERT INTO recuperacao_senha (email, token, expira_em) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token = ?, expira_em = ?',
+            [email, token, expiraEm, token, expiraEm]
+        );
+
+        // Link que aponta para o seu FRONTEND
+        const linkRedefinicao = `http://localhost:5173/reset-password?token=${token}&email=${email}`;
+        await emailService.enviarLinkRecuperacao(email, linkRedefinicao);
+
+        res.json({ message: "Link de recuperação enviado com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao processar solicitação" });
+    }
+};
+
+// 2. Resetar a senha (Substitui no banco)
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, token, novaSenha } = req.body;
+
+        // Valida token e expiração
+        const [validacao] = await db.execute(
+            'SELECT * FROM recuperacao_senha WHERE email = ? AND token = ? AND expira_em > NOW()',
+            [email, token]
+        );
+
+        if (validacao.length === 0) return res.status(400).json({ error: "Token inválido ou expirado." });
+
+        // Criptografa nova senha
+        const salt = await bcrypt.genSalt(10);
+        const senhaHash = await bcrypt.hash(novaSenha, salt);
+
+        // Atualiza e limpa o token
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        try {
+            await connection.execute('UPDATE barbeiros SET senha = ? WHERE email = ?', [senhaHash, email]);
+            await connection.execute('DELETE FROM recuperacao_senha WHERE email = ?', [email]);
+            await connection.commit();
+            res.json({ message: "Senha atualizada com sucesso!" });
+        } catch (err) {
+            await connection.rollback();
+            throw err;
+        } finally { connection.release(); }
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao redefinir senha" });
+    }
+};

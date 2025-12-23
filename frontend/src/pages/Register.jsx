@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Scissors, ChevronLeft, User, Mail, Lock, Phone, FileText, MapPin, Camera, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Scissors, ChevronLeft, User, Mail, Lock, Phone, FileText, MapPin, Camera, Trash2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import barberLogo from '../assets/Gemini_Generated_Image_lkroqflkroqflkro.png';
+import TermosDeUso from '../components/TermosDeUso';
 
 const Register = () => {
     const navigate = useNavigate();
@@ -15,7 +16,8 @@ const Register = () => {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
-    
+    const [termosAceitos, setTermosAceitos] = useState(false);
+    const [modalTermosOpen, setModalTermosOpen] = useState(false);
 
     // --- MÁSCARAS ---
     const maskCep = (v) => v.replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2').substring(0, 9);
@@ -445,10 +447,47 @@ const Register = () => {
     </div>
 </div>
 
-                    <button type="submit" className="md:col-span-2 mt-6 bg-[#FFB703] text-[#023047] font-black py-4 rounded-xl hover:bg-[#e6a600] transition-all shadow-xl active:scale-95 uppercase tracking-widest text-sm">
-                        CONFIRMAR
+                    {/* Bloco de Aceite de Termos */}
+                    <div className="md:col-span-2 mt-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                            <div className="relative">
+                                <input 
+                                    type="checkbox" 
+                                    className="peer hidden"
+                                    checked={termosAceitos}
+                                    onChange={(e) => setTermosAceitos(e.target.checked)}
+                                />
+                                <div className={`w-6 h-6 border-2 rounded-md transition-all flex items-center justify-center 
+                                    ${termosAceitos ? 'bg-[#FFB703] border-[#FFB703]' : 'border-slate-500 group-hover:border-[#FFB703]'}`}>
+                                    {termosAceitos && <CheckCircle size={16} className="text-[#023047]" />}
+                                </div>
+                            </div>
+                            <span className="text-slate-300 text-sm select-none">
+                                Li e concordo com os 
+                                <button 
+                                    type="button"
+                                    onClick={() => setModalTermosOpen(true)}
+                                    className="text-[#FFB703] font-bold mx-1 hover:underline"
+                                >
+                                    Termos de Uso e Política de Privacidade
+                                </button> 
+                                do BarberMaster.
+                            </span>
+                        </label>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={!termosAceitos}
+                        className={`md:col-span-2 mt-6 font-black py-4 rounded-xl transition-all shadow-xl active:scale-95 uppercase tracking-widest text-sm
+                            ${termosAceitos ? 'bg-[#FFB703] text-[#023047] hover:bg-[#e6a600]' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                    >
+                        CONFIRMAR E RECEBER CÓDIGO
                     </button>
                 </form>
+
+                {/* Modal de Termos */}
+                <TermosDeUso isOpen={modalTermosOpen} onClose={() => setModalTermosOpen(false)} />
 
                 <p className="text-center text-slate-500 mt-8 text-xs font-medium">
                     JÁ POSSUI CADASTRO? <Link to="/login" className="text-[#FFB703] font-bold hover:underline">CLIQUE AQUI PARA LOGAR</Link>
