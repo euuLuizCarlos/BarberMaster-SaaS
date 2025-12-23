@@ -231,35 +231,28 @@ const Register = () => {
     };
 
     const handleRegister = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
+    if (Object.keys(errors).length > 0) return toast.error("Corrija os erros!");
+    if (formData.password !== formData.confirmPassword) return toast.error("As senhas não coincidem!");
+
+    const toastId = toast.loading('Enviando código de verificação...');
+
+    try {
+        // 1. Chama a rota de código que você criou no back
+        const response = await api.post('/barber/send-code', { email: formData.email });
         
-        // Validação final antes de enviar
-        if (Object.keys(errors).length > 0) {
-            toast.error("Corrija os erros antes de continuar!");
-            return;
+        if (response.data.devMode) {
+            toast.success("🔧 MODO DEV: Veja o código no terminal do backend!", { id: toastId, duration: 5000 });
+        } else {
+            toast.success("Código enviado! Verifique seu e-mail.", { id: toastId });
         }
 
-        if (formData.password !== formData.confirmPassword) {
-            return toast.error("As senhas não coincidem!");
-        }
-
-        const toastId = toast.loading('Criando seu perfil profissional...');
-        
-        try {
-            const cleanData = { 
-                ...formData, 
-                documento: formData.documento.replace(/\D/g, ''),
-                telefone: formData.telefone.replace(/\D/g, ''),
-                cep: formData.cep.replace(/\D/g, '')
-            };
-
-            await api.post('/barber/register', cleanData);
-            toast.success("Parabéns! Sua barbearia foi cadastrada.", { id: toastId });
-            setTimeout(() => navigate('/login'), 2000);
-        } catch (error) {
-            toast.error(error.response?.data?.error || "Erro ao cadastrar", { id: toastId });
-        }
-    };
+        // 2. Redireciona para a nova página passando os dados do form
+        navigate('/verificacao', { state: { formData } }); 
+    } catch (error) {
+        toast.error(error.response?.data?.error || "Erro ao iniciar cadastro", { id: toastId });
+    }
+};
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">

@@ -214,11 +214,17 @@ exports.sendVerificationCode = async (req, res) => {
             [email, codigo, expiraEm, codigo, expiraEm]
         );
 
-        // Envia o e-mail
+        // Envia o e-mail (ou loga no console em modo dev)
         await emailService.enviarCodigo(email, codigo);
 
-        res.json({ message: "Código enviado com sucesso!" });
+        res.json({ 
+            message: "Código enviado com sucesso!",
+            devMode: !process.env.EMAIL_USER || process.env.EMAIL_USER === 'seu-email@gmail.com'
+        });
     } catch (error) {
-        res.status(500).json({ error: "Erro ao enviar e-mail", details: error.message });
+        console.error('Erro ao enviar código:', error);
+        res.status(500).json({ 
+            error: error.message || "Erro ao enviar e-mail"
+        });
     }
 };
