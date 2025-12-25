@@ -22,5 +22,6 @@ router.post('/send-code', barberController.sendVerificationCode);
 router.post('/forgot-password', barberController.forgotPassword);
 router.post('/reset-password', barberController.resetPassword);
 router.get('/logs', auth, barberController.getLogs);
+router.post('/validar-licenca', auth, barberController.validarLicenca);
 
 module.exports = router;

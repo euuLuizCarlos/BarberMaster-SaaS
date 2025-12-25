@@ -96,3 +96,93 @@ exports.generateKey = async (req, res) => {
         res.status(500).json({ error: "Erro ao gerar chave", details: error.message });
     }
 };
+
+
+exports.getKeys = async (req, res) => {
+    try {
+        // Removi o b.nome e deixei apenas o email, ou mude para o nome correto da sua coluna
+        const [rows] = await db.execute(`
+            SELECT 
+                c.*, 
+                b.email as email_barbeiro 
+            FROM chaves_acesso c
+            LEFT JOIN barbeiros b ON c.barbeiro_id = b.id
+            ORDER BY c.criado_em DESC
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error("Erro na query getKeys:", error);
+        res.status(500).json({ error: "Erro ao buscar chaves" });
+    }
+};
+
+exports.deleteKey = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verifica se a chave existe antes de deletar
+        const [chave] = await db.execute('SELECT * FROM chaves_acesso WHERE id = ?', [id]);
+        
+        if (chave.length === 0) {
+            return res.status(404).json({ error: "Chave não encontrada." });
+        }
+
+        await db.execute('DELETE FROM chaves_acesso WHERE id = ?', [id]);
+
+        res.json({ message: "Chave de teste removida com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao excluir chave", details: error.message });
+    }
+};
+
+exports.getAguardandoLicenca = async (req, res) => {
+    try {
+        const [pendentes] = await db.execute(
+            'SELECT id, nome_dono, nome_barbearia, email, criado_em FROM barbeiros WHERE chave_usada IS NULL ORDER BY criado_em DESC'
+        );
+        res.json(pendentes);
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao buscar pendentes" });
+    }
+};
+
+exports.gerarEEnviarChave = async (req, res) => {
+    const { barbeiroEmail, barbeiroId } = req.body;
+    const emailService = require('../services/emailService');
+    
+    try {
+        // Gera um código aleatório
+        const randomCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+        const novaChave = `BARBER-${randomCode}`;
+
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // Salva a chave como disponível no banco
+            await connection.execute(
+                'INSERT INTO chaves_acesso (codigo_chave, status) VALUES (?, "disponivel")',
+                [novaChave]
+            );
+
+            // Envia o e-mail para o barbeiro
+            await emailService.enviarChaveAcesso(barbeiroEmail, novaChave);
+
+            await connection.commit();
+            res.json({ 
+                message: "Chave gerada e enviada para o e-mail do barbeiro!", 
+                chave: novaChave 
+            });
+        } catch (err) {
+            await connection.rollback();
+            throw err;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        res.status(500).json({ 
+            error: "Erro ao processar chave", 
+            details: error.message 
+        });
+    }
+};

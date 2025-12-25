@@ -7,5 +7,9 @@ const auth = require('../middlewares/authMiddleware');
 router.post('/setup-master', adminController.createMaster);
 router.post('/login', adminController.login);
 router.post('/generate-key', auth, adminController.generateKey);
+router.get('/keys', auth, adminController.getKeys);
+router.delete('/keys/:id', auth, adminController.deleteKey);
+router.get('/pendentes', auth, adminController.getAguardandoLicenca);
+router.post('/enviar-chave', auth, adminController.gerarEEnviarChave);
 
 module.exports = router;

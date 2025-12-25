@@ -22,16 +22,24 @@ const Login = () => {
     const toastId = toast.loading('Verificando credenciais...');
     
     try {
-        const response = await api.post('/barber/login', { 
-            email: formData.email,
-            senha: formData.password
-        });
+    const response = await api.post('/barber/login', { 
+        email: formData.email,
+        senha: formData.password
+    });
 
-        localStorage.setItem('token', response.data.token);
-        toast.success(`Bem-vindo!`, { id: toastId });
-        setTimeout(() => navigate('/dashboard'), 1000);
+    localStorage.setItem('token', response.data.token);
+    
+    // --- MUDANÇA AQUI ---
+    // Agora verificamos o que o backend respondeu sobre a licença
+    if (response.data.user.licencaAtiva) {
+        toast.success(`Bem-vindo de volta!`, { id: toastId });
+        navigate('/dashboard');
+    } else {
+        toast.success(`Login realizado! Ative sua licença.`, { id: toastId });
+        navigate('/validar-licenca');
+    }
 
-    } catch (error) {
+} catch (error) {
         const errorMessage = error.response?.data?.error || 'Erro ao conectar';
         toast.error(errorMessage, { id: toastId });
 

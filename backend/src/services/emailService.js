@@ -86,3 +86,22 @@ exports.enviarLinkRecuperacao = async (email, link) => {
     };
     return transporter.sendMail(mailOptions);
 };
+
+exports.enviarChaveAcesso = async (email, chave) => {
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: '🔑 Sua Chave de Acesso BarberMaster chegou!',
+        html: `
+            <div style="font-family: sans-serif; background: #023047; color: white; padding: 40px; border-radius: 20px;">
+                <h2 style="color: #FFB703;">Sua licença está pronta!</h2>
+                <p>Olá! Seu cadastro foi recebido. Use a chave abaixo para ativar sua barbearia:</p>
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; text-align: center; border: 2px dashed #FFB703; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+                    ${chave}
+                </div>
+                <p style="margin-top: 20px;">Copie e cole na tela de ativação do seu aplicativo.</p>
+            </div>
+        `
+    };
+    return transporter.sendMail(mailOptions);
+};
